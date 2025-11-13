@@ -16,8 +16,8 @@ import re
 # ===========================
 # 🔐 Set Environment Tokens
 # ===========================
-os.environ["HUGGINGFACEHUB_API_TOKEN"] = "HF_TOKEN="REMOVED""
-os.environ["HF_TOKEN"] = "HF_TOKEN="REMOVED""
+os.environ["HUGGINGFACEHUB_API_TOKEN"] = "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"
+os.environ["HF_TOKEN"] = "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"
 
 # ===========================
 # 📂 Paths
@@ -105,66 +105,46 @@ if st.button("Submit Query"):
 # ===========================
 # 🧠 Prompt Setup
 # ===========================
-system_prompt = SystemMessagePromptTemplate.from_template("""
-You are a SystemVerilog expert and documentation analyst with over 20 years of professional experience
-in verification, digital design, and SystemVerilog methodology.
+system_prompt = SystemMessagePromptTemplate.from_template("""You are a SystemVerilog expert and documentation analyst with over 20 years of experience in verification and digital design.
 
-Your task is to answer questions strictly and only using the provided **document context** as your primary source of truth.
+Your task is to answer questions strictly and only using the retrieved document context.  
+You must maintain multi-turn continuity, but document context always overrides conversation memory.
 
----
+==================== RULES FOR USING DOCUMENT CONTEXT ====================
 
-📘 RULES FOR USING DOCUMENT CONTEXT:
+1. Always use the retrieved document context.
+2. If the context contains partial information, you may logically complete it, but stay faithful.
+3. Never ignore the context because of different wording.
+4. Never introduce information outside the document.
+5. If the document contains no relevant information, respond exactly with:
+The document does not contain enough information to answer this question.
 
-1. You must always use the information from the provided document context to answer the question.
-2. If the document context contains **directly relevant or clearly related concepts**, you must use it to reconstruct a complete, valid, and faithful answer.
-3. If the document context contains **partial or implied information** (e.g., related explanations, similar examples, or incomplete code), 
-   you are allowed to reason logically and complete the answer — as long as it remains faithful to the document context.
-4. Do not ignore context merely because wording differs from the question.
-5. Only if the document context is **completely empty** (no content retrieved at all), respond exactly with:
-   "The document does not contain enough information to answer this question."
+==================== MULTI-TURN RULES ====================
 
----
+1. Use previous user messages and your previous answers to maintain continuity.
+2. Do not repeat long explanations unless asked.
+3. Never override document context with conversation memory.
 
-📋 OUTPUT FORMAT RULES:
+==================== OUTPUT FORMAT RULES ====================
 
-You must **always** return your answer strictly as a valid JSON object — no markdown, no explanations, no code fences, and no extra commentary.
+You MUST always output a single valid JSON object ONLY.
 
-The JSON object must exactly follow this schema:
+The JSON must follow EXACTLY this schema:
+
 {{
-  "answer_summary": "A short summary of the answer based only on the document context.",
-  "detailed_explanation": "A concise but complete explanation based only on the provided document context, 
-                           possibly using logical reasoning if partial information is given.",
-  "code_example": "SystemVerilog code snippet derived or reconstructed from the document context. 
-                   If no code is mentioned, return an empty string."
+  "answer_summary": "A short summary of the answer based on the document context.",
+  "detailed_explanation": "A complete explanation using information and reasoning supported by the document context.",
+  "code_example": "SystemVerilog code example reconstructed or quoted from the document if applicable."
 }}
 
----
+==================== EXTRA RULES ====================
 
-📌 ADDITIONAL BEHAVIOR RULES:
-
-- Do not include any `<think>` tags, markdown syntax, or triple backticks.
-- Do not use reasoning or text outside the JSON object.
-- If the context explicitly mentions examples or figures, you may reconstruct the equivalent SystemVerilog code faithfully.
-- Never hallucinate new topics or concepts outside the given document’s scope.
-- When partial code exists, reconstruct a **complete valid example** consistent with the document’s explanation.
-- When the question asks for “code,” ensure the `code_example` field contains syntactically correct SystemVerilog.
-
----
-
-🎯 EXAMPLES OF BEHAVIOR:
-
-✅ If the document discusses `interfaces`, `modports`, or similar concepts relevant to the question,
-   use that to build a correct SystemVerilog answer — even if the question wording differs slightly.
-
-✅ If the document has no context at all (empty or irrelevant), return exactly:
-   "The document does not contain enough information to answer this question."
-
-✅ Every valid answer must be a **single JSON object**.
-
----
-
-You must now answer the user's question following these rules.
-
+- No markdown.
+- No backticks.
+- No <think>.
+- No commentary outside the JSON.
+- Reconstruct SystemVerilog code only when context describes it.
+- Always return valid JSON.
 
 """)
 
@@ -223,12 +203,17 @@ deep_seek = ChatHuggingFace(
 if query and strr:
     response = deep_seek.invoke(formatted_prompt)
     st.subheader("💡 Response:")
-    response_text =response.content  
-    pattern = re.compile(r'^\{\n(?:.+\n){3}\}', re.MULTILINE)
+    response_text = response.content
+
+
+    pattern = re.compile(
+    r'\{\s*"answer_summary"\s*:\s*".*?"\s*,\s*"detailed_explanation"\s*:\s*".*?"\s*,\s*"code_example"\s*:\s*".*?"\s*\}',
+    re.DOTALL )
+
     m = pattern.search(response_text)
     scrapped = m.group(0) if m else None
     parsed_output = jsp.parse(scrapped)
     st.write(parsed_output.answer_summary)
     st.write(parsed_output.detailed_explanation)
-    st.code(parsed_output.code_example, language="systemverilog")
+    st.code(parsed_output.code_example,language="systemverilog")
 
