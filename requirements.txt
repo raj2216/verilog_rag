@@ -1,0 +1,15 @@
+# ---- Core Environment ----
+streamlit
+python-dotenv
+
+# ---- LangChain Ecosystem ----
+langchain
+langchain-community
+langchain-core
+langchain-huggingface
+langchain-chroma
+
+# ---- Vector Store ----
+chromadb
+
+pydantic
