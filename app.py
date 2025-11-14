@@ -12,13 +12,20 @@ from pydantic import BaseModel, Field
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 import re
+from dotenv import load_dotenv
 
 # ===========================
 # 🔐 Set Environment Tokens
 # ===========================
-os.environ["GOOGLE_API_KEY"] = "GOOGLE_API_KEY="REMOVED""
-os.environ["HUGGINGFACEHUB_API_TOKEN"] = "HF_TOKEN="REMOVED""
-os.environ["HF_TOKEN"] = "HF_TOKEN="REMOVED""
+load_dotenv()
+
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+HUGGINGFACE_API = os.getenv("HUGGINGFACEHUB_API_TOKEN")
+HF_TOKEN = os.getenv("HF_TOKEN")
+
+os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
+os.environ["HUGGINGFACEHUB_API_TOKEN"] = HUGGINGFACE_API
+os.environ["HF_TOKEN"] = HF_TOKEN
 
 # ===========================
 # 🎨 Streamlit UI Setup (Beautiful UI)
@@ -186,11 +193,11 @@ You MUST always output a single valid JSON object ONLY.
 
 The JSON must follow EXACTLY this schema:
 
-{
+{{
   "answer_summary": "A short summary of the answer based on the document context.",
   "detailed_explanation": "A complete explanation using information and reasoning supported by the document context.",
   "code_example": "SystemVerilog code example reconstructed or quoted from the document if applicable."
-}
+}}
 
 ==================== EXTRA RULES ====================
 
@@ -242,13 +249,21 @@ Question:
 
     # Extract JSON using regex
     pattern = re.compile(
-        r'\{\s*"answer_summary"\s*:\s*".*?"\s*,\s*"detailed_explanation"\s*:\s*".*?"\s*,\s*"code_example"\s*:\s*(?:".*?"|null)\s*\}',
-        re.DOTALL
-    )
+    r'\{\s*"answer_summary"\s*:\s*".*?"\s*,\s*"detailed_explanation"\s*:\s*".*?"\s*,\s*"code_example"\s*:\s*(?:".*?"|null)\s*\}',
+    re.DOTALL)
+
+# Search inside raw model output
     m = pattern.search(response_text)
+
+# Extract only the JSON object
     scrapped = m.group(0) if m else None
 
-    parsed_output = jsp.parse(scrapped)
+# ⛔ IMPORTANT FIX: keep ONLY the JSON text
+    response_text_clean = scrapped
+
+# Parse only the JSON (no garbage text)
+    parsed_output = jsp.parse(response_text_clean)
+
 
     # Assistant Response
     answer_block = parsed_output.answer_summary + "\n\n" + parsed_output.detailed_explanation
