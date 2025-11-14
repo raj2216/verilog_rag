@@ -64,13 +64,7 @@ st.markdown("""
             background-color: #f1f9ff !important;
             border-left: 5px solid #0077b6 !important;
         }
-        pre, code {
-            background-color: #002b36 !important;
-            color: #fdf6e3 !important;
-            padding: 12px !important;
-            border-radius: 8px !important;
-            font-size: 14px !important;
-        }
+
     </style>
 """, unsafe_allow_html=True)
 
@@ -249,7 +243,7 @@ Question:
 
     # Extract JSON using regex
     pattern = re.compile(
-    r'\{\s*"answer_summary"\s*:\s*".*?"\s*,\s*"detailed_explanation"\s*:\s*".*?"\s*,\s*"code_example"\s*:\s*(?:".*?"|null)\s*\}',
+    r'\{[\s\S]*?"answer_summary"[\s\S]*?"detailed_explanation"[\s\S]*?"code_example"[\s\S]*?\}',
     re.DOTALL)
 
 # Search inside raw model output
@@ -271,5 +265,10 @@ Question:
     st.chat_message("assistant").write(answer_block)
     st.chat_message("assistant").code(parsed_output.code_example, language="systemverilog")
 
+
     # Store assistant message
     st.session_state.messages.append({"role": "assistant", "content": answer_block})
+
+
+
+
