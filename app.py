@@ -91,8 +91,9 @@ emb = HuggingFaceEmbeddings(model_name="mixedbread-ai/mxbai-embed-large-v1")
 # ===========================
 # 📄 Load & Split Document
 # ===========================
-TXT_FILE = "/Users/rajbunny/rag_sumedha/sumedha_rag.txt"
-DB_PATH = "/Users/rajbunny/rag_sumedha/db1"
+DB_PATH = "db1"
+TXT_FILE = "sumedha_rag.txt"
+
 
 with open(TXT_FILE, "r", encoding="utf-8") as f:
     text_data = f.read()
