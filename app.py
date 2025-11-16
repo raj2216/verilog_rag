@@ -1,6 +1,7 @@
 import os
 import streamlit as st
-from langchain_chroma import Chroma
+
+from langchain_community.vectorstores import Chroma
 from langchain_huggingface.embeddings import HuggingFaceEmbeddings
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain_core.prompts import (
@@ -8,15 +9,14 @@ from langchain_core.prompts import (
     HumanMessagePromptTemplate,
     ChatPromptTemplate,
 )
-from pydantic import BaseModel, Field
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-
-import re
+from pydantic import BaseModel, Field
 from dotenv import load_dotenv
+import re
 
 # ===========================
-# 🔐 Set Environment Tokens
+# 🔐 Load Environment Tokens
 # ===========================
 load_dotenv()
 
@@ -26,14 +26,14 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 
 os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
 os.environ["HUGGINGFACEHUB_API_TOKEN"] = HUGGINGFACE_API
-os.environ["HF_TOKEN"] = HF_TOKEN 
+os.environ["HF_TOKEN"] = HF_TOKEN
 
 # ===========================
-# 🎨 Streamlit UI Setup (Beautiful UI)
+# 🎨 Streamlit UI Setup
 # ===========================
-st.set_page_config(page_title="📘 SystemVerilog Knowledge Base", layout="wide")   
+st.set_page_config(page_title="📘 SystemVerilog Knowledge Base", layout="wide")
 
-# Custom CSS Styling
+# --- Your CSS ---
 st.markdown("""
     <style>
         .main-title {
@@ -65,36 +65,38 @@ st.markdown("""
             background-color: #f1f9ff !important;
             border-left: 5px solid #0077b6 !important;
         }
-
     </style>
 """, unsafe_allow_html=True)
 
-# Title
+# Titles
 st.markdown('<div class="main-title">🧠 SystemVerilog RAG Chat Assistant</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-text">Ask any question strictly from the SystemVerilog document</div>', unsafe_allow_html=True)
 
 # ===========================
-# 🧠 Conversation Memory
+# Chat Memory
 # ===========================
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Display chat history
 for msg in st.session_state.messages:
     st.chat_message(msg["role"]).write(msg["content"])
 
 # ===========================
-# 🔍 Load Embedding Model
+# Embedding Model
 # ===========================
 emb = HuggingFaceEmbeddings(model_name="mixedbread-ai/mxbai-embed-large-v1")
 
 # ===========================
-# 📄 Load & Split Document
+# Document + DB
 # ===========================
 DB_PATH = "db1"
 TXT_FILE = "sumedha_rag.txt"
 
+# 🔥 FIX: Create DB folder if missing (Streamlit Cloud needs this)
+if not os.path.exists(DB_PATH):
+    os.makedirs(DB_PATH)
 
+# Load document
 with open(TXT_FILE, "r", encoding="utf-8") as f:
     text_data = f.read()
 
@@ -110,11 +112,8 @@ splitter = RecursiveCharacterTextSplitter(
 docs = splitter.split_text(text_data)
 st.write(f"✅ Total chunks created: {len(docs)}")
 
-# ===========================
-# 🧱 Create / Load Chroma DB
-# ===========================
+# Create / load DB
 if "vectordb" not in st.session_state:
-
     if not os.path.exists(DB_PATH) or len(os.listdir(DB_PATH)) == 0:
         vectordb = Chroma.from_texts(
             texts=docs,
@@ -128,39 +127,34 @@ if "vectordb" not in st.session_state:
             embedding_function=emb,
             collection_name="verilog_db_2_0"
         )
-
     st.session_state.vectordb = vectordb
-
 else:
     vectordb = st.session_state.vectordb
 
-# ===========================
-# 🔎 Retriever
-# ===========================
 retriever = vectordb.as_retriever(
     search_type="mmr",
     search_kwargs={"k": 6, "fetch_k": 20, "lambda_mult": 0.75}
 )
 
 # ===========================
-# 💬 Chat Input
+# Chat Input
 # ===========================
 query = st.chat_input("Ask your SystemVerilog question...")
 
 if query:
 
-    # Store user message
+    # Show user msg
     st.session_state.messages.append({"role": "user", "content": query})
     st.chat_message("user").write(query)
 
-    # Run Retrieval
+    # Retrieval
     strr = ""
     results = retriever.invoke(query)
     for r in results:
         strr += r.page_content
 
     # ===========================
-    # 📘 PROMPT (Your exact system message)
+    # YOUR SYSTEM MESSAGE (UNCHANGED)
     # ===========================
     system_prompt = SystemMessagePromptTemplate.from_template("""
 You are a SystemVerilog expert and documentation analyst with over 20 years of experience in verification and digital design.
@@ -201,7 +195,7 @@ The JSON must follow EXACTLY this schema:
 - No backticks.
 - No <think>.
 - No commentary outside the JSON.
--You MUST always generate a SystemVerilog code example whenever possible based on the concepts in the context, even if the exact code is not shown. Use minimal faithful reconstruction. or else say code is not required
+- You MUST always generate a SystemVerilog code example whenever possible based on the concepts in the context, even if the exact code is not shown. Use minimal faithful reconstruction. or else say code is not required
 - Always return valid JSON.
 """)
 
@@ -217,7 +211,6 @@ Question:
 
     prompt = ChatPromptTemplate.from_messages([system_prompt, human_prompt])
 
-    # Response schema
     class VerilogAnswer(BaseModel):
         answer_summary: str
         detailed_explanation: str
@@ -232,7 +225,7 @@ Question:
     )
 
     # ===========================
-    # 🤖 Google Gemini
+    # Gemini LLM
     # ===========================
     gemini = ChatGoogleGenerativeAI(
         model="gemini-2.0-flash",
@@ -243,30 +236,23 @@ Question:
     response = gemini.invoke(formatted_prompt)
     response_text = response.content
 
-    # Extract JSON using regex
     pattern = re.compile(
-    r'\{[\s\S]*?"answer_summary"[\s\S]*?"detailed_explanation"[\s\S]*?"code_example"[\s\S]*?\}',
-    re.DOTALL)
+        r'\{[\s\S]*?"answer_summary"[\s\S]*?"detailed_explanation"[\s\S]*?"code_example"[\s\S]*?\}',
+        re.DOTALL
+    )
 
-# Search inside raw model output
     m = pattern.search(response_text)
+    extracted_json = m.group(0) if m else None
 
-# Extract only the JSON object
-    scrapped = m.group(0) if m else None
+    parsed_output = jsp.parse(extracted_json)
 
-# ⛔ IMPORTANT FIX: keep ONLY the JSON text
-    response_text_clean = scrapped
-
-# Parse only the JSON (no garbage text)
-    parsed_output = jsp.parse(response_text_clean)
-
-
-    # Assistant Response
-    answer_block = parsed_output.answer_summary + "\n\n" + parsed_output.detailed_explanation
+    answer_block = (
+        parsed_output.answer_summary
+        + "\n\n"
+        + parsed_output.detailed_explanation
+    )
 
     st.chat_message("assistant").write(answer_block)
-    st.chat_message("assistant").code(parsed_output.code_example, language="systemverilog")
+    st.code(parsed_output.code_example, language="systemverilog")
 
-
-    # Store assistant message
     st.session_state.messages.append({"role": "assistant", "content": answer_block})
