@@ -9,4 +9,5 @@ sentence-transformers
 chromadb
 pydantic
 huggingface-hub
+langchain-google-genai
 
