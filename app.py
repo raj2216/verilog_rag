@@ -84,7 +84,11 @@ for msg in st.session_state.messages:
 # ===========================
 # Embedding Model
 # ===========================
-emb = HuggingFaceEmbeddings(model_name="mixedbread-ai/mxbai-embed-large-v1")
+# ===========================
+# Embedding Model
+# ===========================
+emb = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+
 
 # ===========================
 # Document + DB
