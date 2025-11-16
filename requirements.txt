@@ -1,18 +1,12 @@
 streamlit
-pydantic
-
 langchain
 langchain-core
 langchain-community
 langchain-text-splitters
+langchain-chroma
 langchain-huggingface
-langchain-google-genai
-
-chromadb
-
-# Required for HuggingFaceEmbeddings + mxbai model
-torch
-transformers
 sentence-transformers
-accelerate
+chromadb
+pydantic
 huggingface-hub
+
