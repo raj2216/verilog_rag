@@ -25,12 +25,12 @@ HF_TOKEN = os.getenv("HF_TOKEN")
 
 os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
 os.environ["HUGGINGFACEHUB_API_TOKEN"] = HUGGINGFACE_API
-os.environ["HF_TOKEN"] = HF_TOKEN
+os.environ["HF_TOKEN"] = HF_TOKEN 
 
 # ===========================
 # 🎨 Streamlit UI Setup (Beautiful UI)
 # ===========================
-st.set_page_config(page_title="📘 SystemVerilog Knowledge Base", layout="wide")
+st.set_page_config(page_title="📘 SystemVerilog Knowledge Base", layout="wide")   
 
 # Custom CSS Styling
 st.markdown("""
@@ -268,7 +268,3 @@ Question:
 
     # Store assistant message
     st.session_state.messages.append({"role": "assistant", "content": answer_block})
-
-
-
-
