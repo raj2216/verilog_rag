@@ -9,6 +9,9 @@ langchain-core
 langchain-huggingface
 langchain-chroma
 langchain-google-genai
+langchain
+langchain-text-splitters
+
 
 
 # ---- Vector Store ----
