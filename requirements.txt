@@ -8,6 +8,8 @@ langchain-community
 langchain-core
 langchain-huggingface
 langchain-chroma
+langchain-google-genai
+
 
 # ---- Vector Store ----
 chromadb
