@@ -1,13 +1,15 @@
 streamlit
 langchain
-langchain-core
 langchain-community
+langchain-core
 langchain-text-splitters
 langchain-chroma
 langchain-huggingface
-sentence-transformers
+langchain-google-genai
 chromadb
+sentence-transformers
 pydantic
 huggingface-hub
-langchain-google-genai
+python-dotenv
+protobuf
 
