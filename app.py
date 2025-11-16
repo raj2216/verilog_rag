@@ -10,7 +10,8 @@ from langchain_core.prompts import (
 )
 from pydantic import BaseModel, Field
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
 import re
 from dotenv import load_dotenv
 
